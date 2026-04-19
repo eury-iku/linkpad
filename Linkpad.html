@@ -1,0 +1,2067 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linkpad</title>
+    <style>
+        /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+           Linkpad v2 — 業務向け軽量ブックマーク
+           方針: 情報密度 UP / Windows ネイティブフォント固定
+                 冷たい青ベース維持 / 4px グリッドで間隔を統一
+           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+        :root {
+            /* ink スケール — 青を僅かに含むニュートラル */
+            --ink-950: #080c14;
+            --ink-900: #0e1524;
+            --ink-800: #1b2435;
+            --ink-700: #39445a;
+            --ink-600: #5a637a;
+            --ink-500: #7a8396;
+            --ink-400: #a0a8b8;
+            --ink-300: #c4cad5;
+            --ink-200: #dfe3eb;
+            --ink-150: #e8ebf1;
+            --ink-100: #eff1f5;
+            --ink-75:  #f4f5f9;
+            --ink-50:  #f9fafc;
+
+            /* accent — oklch 由来の落ち着いた青 */
+            --accent:        #2d63d4;
+            --accent-hover:  #2351b8;
+            --accent-soft:   #eaf0fc;
+            --accent-border: #cedef6;
+            --accent-ring:   rgba(45, 99, 212, 0.14);
+
+            /* kind — 同輝度・同彩度で調和 */
+            --kind-web:       #2d63d4;
+            --kind-web-bg:    #eaf0fc;
+            --kind-file:      #2f7a52;
+            --kind-file-bg:   #e8f2ec;
+            --kind-server:    #a7611f;
+            --kind-server-bg: #f6ede0;
+
+            --danger:    #b93a3a;
+            --danger-bg: #fbeceb;
+
+            --bg:      #f6f7f9;
+            --surface: #ffffff;
+
+            --border:        #e2e5ec;
+            --border-strong: #cfd3dc;
+            --divider:       #eceef3;
+
+            /* 4px グリッド */
+            --s-1:  4px;
+            --s-2:  8px;
+            --s-3: 12px;
+            --s-4: 16px;
+            --s-5: 20px;
+            --s-6: 24px;
+            --s-8: 32px;
+
+            --radius-xs: 3px;
+            --radius-sm: 4px;
+            --radius:    6px;
+            --radius-lg: 8px;
+
+            --shadow-xs: 0 1px 0 rgba(14,21,36,0.03);
+            --shadow-sm: 0 1px 2px rgba(14,21,36,0.05);
+            --shadow-md: 0 2px 6px rgba(14,21,36,0.06), 0 1px 2px rgba(14,21,36,0.04);
+            --shadow-lg: 0 10px 24px rgba(14,21,36,0.10), 0 2px 4px rgba(14,21,36,0.05);
+
+            /* Windows 標準フォント固定 */
+            --font-ui:   "Segoe UI", "Yu Gothic UI", "Meiryo UI", "MS UI Gothic", sans-serif;
+            --font-mono: "Consolas", "Cascadia Mono", "Courier New", monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+
+        body {
+            font-family: var(--font-ui);
+            background: var(--bg);
+            color: var(--ink-800);
+            min-height: 100vh;
+            padding: var(--s-6) var(--s-5) var(--s-8);
+            font-feature-settings: "palt";
+            line-height: 1.5;
+            font-size: 13px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* ━━━━━━━━━━━━━━━━━━ HEADER ━━━━━━━━━━━━━━━━━━ */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--s-4);
+            padding-bottom: var(--s-4);
+            margin-bottom: var(--s-4);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: var(--s-3);
+        }
+
+        .brand-mark {
+            width: 20px;
+            height: 20px;
+            border-radius: var(--radius-sm);
+            background: var(--ink-900);
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .brand-mark::before,
+        .brand-mark::after {
+            content: '';
+            position: absolute;
+            background: var(--surface);
+            border-radius: 1px;
+        }
+
+        .brand-mark::before {
+            left: 4px; top: 5px;
+            width: 8px; height: 1.5px;
+            transform: rotate(-30deg);
+        }
+
+        .brand-mark::after {
+            left: 8px; top: 13px;
+            width: 8px; height: 1.5px;
+            transform: rotate(-30deg);
+        }
+
+        h1 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--ink-900);
+            letter-spacing: -0.005em;
+            line-height: 1;
+        }
+
+        .header-tag {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--ink-500);
+            letter-spacing: 0.1em;
+            font-weight: 400;
+            text-transform: uppercase;
+            padding-left: var(--s-3);
+            border-left: 1px solid var(--border);
+            line-height: 1;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: var(--s-1);
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .utility-btn {
+            height: 26px;
+            padding: 0 10px;
+            background: var(--surface);
+            color: var(--ink-700);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 500;
+            font-family: var(--font-ui);
+            cursor: pointer;
+            transition: background 0.1s ease, color 0.1s ease, border-color 0.1s ease;
+            white-space: nowrap;
+            line-height: 1;
+        }
+
+        .utility-btn:hover {
+            background: var(--ink-75);
+            color: var(--ink-900);
+            border-color: var(--border-strong);
+        }
+
+        .utility-btn:active { background: var(--ink-100); }
+
+        .utility-btn[aria-expanded="true"] {
+            background: var(--ink-900);
+            color: var(--surface);
+            border-color: var(--ink-900);
+        }
+
+        /* separator in header actions */
+        .header-sep {
+            width: 1px;
+            height: 16px;
+            background: var(--border);
+            margin: 0 var(--s-1);
+        }
+
+        /* ━━━━━━━━━━━━━━━━━━ NOTICE PANEL ━━━━━━━━━━━━━━━━━━ */
+        .notice-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: var(--s-3);
+            padding: var(--s-3) var(--s-4);
+            color: var(--ink-700);
+            font-size: 12px;
+            line-height: 1.65;
+        }
+
+        .notice-panel[hidden] { display: none; }
+
+        .notice-title {
+            font-weight: 600;
+            color: var(--ink-900);
+            margin-bottom: var(--s-2);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: var(--s-2);
+        }
+
+        .notice-title::before {
+            content: '';
+            width: 3px;
+            height: 12px;
+            background: var(--accent);
+            border-radius: 1px;
+        }
+
+        .notice-list { list-style: none; }
+
+        .notice-list li {
+            padding-left: var(--s-3);
+            position: relative;
+            margin-bottom: 3px;
+        }
+
+        .notice-list li:last-child { margin-bottom: 0; }
+
+        .notice-list li::before {
+            content: '';
+            position: absolute;
+            left: 2px;
+            top: 10px;
+            width: 4px;
+            height: 1px;
+            background: var(--ink-400);
+        }
+
+        /* フォントサイズ調整 */
+        .font-controls {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 1px;
+            height: 26px;
+        }
+
+        .font-btn {
+            width: 22px;
+            height: 22px;
+            border: none;
+            border-radius: var(--radius-xs);
+            background: transparent;
+            color: var(--ink-600);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.1s ease, color 0.1s ease;
+            display: flex; align-items: center; justify-content: center;
+            line-height: 1;
+            font-family: var(--font-ui);
+        }
+
+        .font-btn:hover:not(:disabled) {
+            background: var(--ink-100);
+            color: var(--ink-900);
+        }
+
+        .font-btn:disabled {
+            color: var(--ink-300);
+            cursor: not-allowed;
+        }
+
+        .font-size-display {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--ink-700);
+            min-width: 30px;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+        }
+
+        /* ━━━━━━━━━━━━━━━━━━ INPUT SECTION ━━━━━━━━━━━━━━━━━━ */
+        .input-section {
+            background: var(--surface);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius);
+            padding: var(--s-2) var(--s-2) var(--s-2) 0;
+            margin-bottom: var(--s-3);
+            display: flex;
+            align-items: center;
+            gap: var(--s-2);
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .input-section::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 3px;
+            background: var(--accent);
+        }
+
+        .input-section:focus-within {
+            border-color: var(--accent);
+            box-shadow: var(--shadow-sm), 0 0 0 3px var(--accent-ring);
+        }
+
+        .input-label {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--accent);
+            letter-spacing: 0.14em;
+            white-space: nowrap;
+            text-transform: uppercase;
+            padding: 0 var(--s-3) 0 var(--s-3);
+            border-right: 1px solid var(--border);
+            line-height: 1;
+        }
+
+        .input-fields {
+            display: flex;
+            flex: 1;
+            gap: var(--s-2);
+            border-radius: var(--radius-sm);
+        }
+
+        .field-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            min-width: 0;
+            background: var(--ink-50);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 0 var(--s-2);
+            height: 30px;
+            transition: background 0.1s ease, border-color 0.1s ease, box-shadow 0.1s ease;
+        }
+
+        .field-wrap.url-field { flex: 2; }
+
+        .field-wrap:hover {
+            background: var(--surface);
+            border-color: var(--border-strong);
+        }
+
+        .field-wrap:focus-within {
+            background: var(--surface);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-ring);
+        }
+
+        .field-icon {
+            width: 13px;
+            height: 13px;
+            color: var(--ink-400);
+            flex-shrink: 0;
+            display: inline-flex;
+            transition: color 0.1s ease;
+        }
+
+        .field-wrap:focus-within .field-icon { color: var(--accent); }
+
+        .field-icon svg { width: 100%; height: 100%; display: block; }
+
+        input[type="text"] {
+            flex: 1;
+            min-width: 0;
+            padding: 0;
+            border: none;
+            border-radius: 0;
+            font-size: 13px;
+            font-family: var(--font-ui);
+            color: var(--ink-900);
+            background: transparent;
+            outline: none;
+            line-height: 1.4;
+            height: 28px;
+            font-weight: 500;
+        }
+
+        input[type="text"]::placeholder {
+            color: var(--ink-400);
+            font-weight: 400;
+        }
+
+        #urlInput { font-family: var(--font-mono); font-size: 12px; }
+        #nameInput { font-size: 13px; }
+
+        .add-btn {
+            height: 30px;
+            padding: 0 16px;
+            background: var(--accent);
+            color: var(--surface);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 600;
+            font-family: var(--font-ui);
+            cursor: pointer;
+            letter-spacing: 0.04em;
+            transition: background 0.1s ease, transform 0.05s ease;
+            white-space: nowrap;
+            line-height: 1;
+            box-shadow: 0 1px 0 rgba(14,21,36,0.08);
+        }
+
+        .add-btn:hover { background: var(--accent-hover); }
+        .add-btn:active { background: var(--accent-hover); transform: translateY(1px); }
+
+        /* ━━━━━━━━━━━━━━━━━━ STATS BAR ━━━━━━━━━━━━━━━━━━ */
+        .stats-bar {
+            display: flex;
+            align-items: center;
+            gap: var(--s-4);
+            padding: 0 var(--s-1);
+            margin-bottom: var(--s-2);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--ink-500);
+            letter-spacing: 0.06em;
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+        }
+
+        .stats-bar > span { display: inline-flex; align-items: center; gap: 5px; }
+        .stats-bar strong {
+            color: var(--ink-800);
+            font-weight: 600;
+        }
+        .stats-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .stats-dot.web    { background: var(--kind-web); }
+        .stats-dot.file   { background: var(--kind-file); }
+        .stats-dot.server { background: var(--kind-server); }
+
+        .stats-sep {
+            width: 1px;
+            height: 10px;
+            background: var(--border);
+        }
+
+        .stats-capacity {
+            margin-left: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--s-2);
+        }
+
+        .stats-bar-track {
+            width: 80px;
+            height: 3px;
+            background: var(--ink-150);
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .stats-bar-fill {
+            position: absolute;
+            inset: 0 auto 0 0;
+            background: var(--accent);
+            border-radius: 2px;
+            transition: width 0.2s ease;
+        }
+
+        /* ━━━━━━━━━━━━━━━━━━ COLUMNS ━━━━━━━━━━━━━━━━━━ */
+        .links-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: var(--s-3);
+        }
+
+        .links-column {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            min-height: 340px;
+            overflow: hidden;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow-xs);
+        }
+
+        .links-column.column-over {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+            box-shadow: 0 0 0 2px var(--accent-ring);
+        }
+
+        .column-header {
+            padding: var(--s-2) var(--s-3);
+            display: flex;
+            align-items: center;
+            gap: var(--s-2);
+            border-bottom: 1px solid var(--divider);
+            background: var(--ink-50);
+            min-height: 32px;
+        }
+
+        .column-index {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--ink-400);
+            letter-spacing: 0.06em;
+            flex-shrink: 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .column-title {
+            font-family: var(--font-ui);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--ink-800);
+            letter-spacing: -0.005em;
+            display: block !important;
+            flex: 1;
+            cursor: text;
+            border-radius: var(--radius-xs);
+            padding: 2px 4px;
+            margin-left: -4px;
+            outline: none;
+            line-height: 1.3;
+        }
+
+        .column-title:hover {
+            background: var(--ink-100);
+            color: var(--ink-900);
+        }
+
+        .column-title.editing {
+            background: var(--surface);
+            color: var(--ink-900);
+            box-shadow: 0 0 0 1.5px var(--accent), 0 0 0 3px var(--accent-ring);
+        }
+
+        .column-count {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--ink-500);
+            font-variant-numeric: tabular-nums;
+            flex-shrink: 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 1px 5px;
+            border-radius: 3px;
+            min-width: 22px;
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        .column-count.empty {
+            color: var(--ink-300);
+            background: transparent;
+            border-color: transparent;
+        }
+
+        .column-body {
+            padding: var(--s-1);
+            flex: 1;
+            min-height: 300px;
+        }
+
+        /* ━━━━━━━━━━━━━━━━━━ LINK ITEMS ━━━━━━━━━━━━━━━━━━ */
+        .link-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 4px 3px 2px;
+            margin-bottom: 1px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            transition: background 0.08s ease, border-color 0.08s ease;
+            cursor: default;
+            position: relative;
+            min-height: 26px;
+        }
+
+        .link-item:hover {
+            background: var(--ink-50);
+        }
+
+        .link-item.dragging { opacity: 0.35; }
+
+        .link-item.drop-before::after,
+        .link-item.drop-after::after {
+            content: '';
+            position: absolute;
+            left: 4px;
+            right: 4px;
+            height: 2px;
+            background: var(--accent);
+            border-radius: 1px;
+            pointer-events: none;
+            box-shadow: 0 0 0 2px var(--accent-ring);
+        }
+
+        .link-item.drop-before::after { top: -2px; }
+        .link-item.drop-after::after  { bottom: -2px; }
+
+        .link-item.editing { background: var(--accent-soft); }
+
+        .drag-handle {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 10px;
+            height: 20px;
+            opacity: 0;
+            transition: opacity 0.1s ease;
+            flex-shrink: 0;
+            cursor: grab;
+            gap: 2px;
+        }
+
+        .drag-handle:active { cursor: grabbing; }
+
+        .drag-handle::before {
+            content: '';
+            width: 6px;
+            height: 10px;
+            background-image: radial-gradient(circle, var(--ink-400) 0.8px, transparent 1px);
+            background-size: 3px 3px;
+            background-position: 0 0;
+        }
+
+        .link-item:hover .drag-handle { opacity: 1; }
+
+        .link-item a {
+            flex: 1;
+            color: var(--ink-800);
+            text-decoration: none;
+            font-weight: 400;
+            font-size: 12px;
+            transition: color 0.1s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+            letter-spacing: -0.003em;
+            min-width: 0;
+            line-height: 1.4;
+        }
+
+        .link-item a:hover { color: var(--ink-950); }
+
+        .external-icon {
+            display: inline-flex;
+            width: 10px;
+            height: 10px;
+            margin-left: 3px;
+            vertical-align: -1px;
+            opacity: 0;
+            transition: opacity 0.1s ease;
+            color: var(--ink-500);
+            flex-shrink: 0;
+        }
+
+        .external-icon svg { width: 100%; height: 100%; display: block; }
+
+        .link-item:hover .external-icon { opacity: 1; }
+
+        .link-name-input {
+            flex: 1;
+            min-width: 0;
+            padding: 2px 6px;
+            border: 1px solid var(--accent);
+            border-radius: var(--radius-xs);
+            background: var(--surface);
+            color: var(--ink-900);
+            font-family: var(--font-ui);
+            font-weight: 400;
+            font-size: 12px;
+            outline: none;
+            box-shadow: 0 0 0 2px var(--accent-ring);
+        }
+
+        .link-badge {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            padding: 1px 4px;
+            border-radius: 2px;
+            flex-shrink: 0;
+            white-space: nowrap;
+            line-height: 1.4;
+            min-width: 30px;
+            text-align: center;
+            height: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .link-badge.web    { background: var(--kind-web-bg);    color: var(--kind-web); }
+        .link-badge.file   { background: var(--kind-file-bg);   color: var(--kind-file); }
+        .link-badge.server { background: var(--kind-server-bg); color: var(--kind-server); }
+
+        .delete-btn {
+            width: 18px;
+            height: 18px;
+            border: none;
+            border-radius: var(--radius-xs);
+            background: transparent;
+            color: var(--ink-400);
+            font-size: 13px;
+            font-weight: 300;
+            cursor: pointer;
+            transition: background 0.1s ease, color 0.1s ease, opacity 0.1s ease;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            line-height: 1;
+            opacity: 0;
+            font-family: var(--font-ui);
+        }
+
+        .link-item:hover .delete-btn { opacity: 1; }
+
+        .delete-btn:hover {
+            background: var(--danger-bg);
+            color: var(--danger);
+        }
+
+        /* ━━━━━━━━━━━━━━━━━━ EMPTY STATE ━━━━━━━━━━━━━━━━━━ */
+        .empty-message {
+            text-align: center;
+            color: var(--ink-400);
+            padding: 40px var(--s-3);
+            font-size: 11px;
+            line-height: 1.6;
+            pointer-events: none;
+            font-family: var(--font-mono);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .empty-message::before {
+            content: '';
+            display: block;
+            width: 20px;
+            height: 20px;
+            margin: 0 auto var(--s-2);
+            border: 1px dashed var(--ink-300);
+            border-radius: var(--radius-xs);
+        }
+
+        /* ━━━━━━━━━━━━━━━━━━ FOOTER ━━━━━━━━━━━━━━━━━━ */
+        .app-footer {
+            margin-top: var(--s-4);
+            padding-top: var(--s-3);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--s-3);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--ink-400);
+            letter-spacing: 0.06em;
+            line-height: 1;
+        }
+
+        .app-footer .footer-right {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--s-3);
+        }
+
+        .kbd {
+            font-family: var(--font-mono);
+            font-size: 9.5px;
+            color: var(--ink-600);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-bottom-width: 1.5px;
+            border-radius: 3px;
+            padding: 1px 4px;
+            line-height: 1.2;
+        }
+
+        /* ━━━━━━━━━━━━━━━━━━ TOAST ━━━━━━━━━━━━━━━━━━ */
+        .toast {
+            position: fixed;
+            right: var(--s-5);
+            bottom: var(--s-5);
+            background: var(--ink-900);
+            color: var(--surface);
+            border-radius: var(--radius);
+            padding: 8px 14px;
+            font-size: 12px;
+            font-weight: 500;
+            box-shadow: var(--shadow-lg);
+            opacity: 0;
+            transform: translateY(6px);
+            pointer-events: none;
+            transition: opacity 0.16s ease, transform 0.16s ease;
+            z-index: 999;
+            letter-spacing: 0.01em;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--s-2);
+            line-height: 1;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #55d587;
+        }
+
+        /* ━━━━━━━━━━━━━━━━━━ RESPONSIVE ━━━━━━━━━━━━━━━━━━ */
+        @media (max-width: 900px) {
+            .links-container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 640px) {
+            body { padding: var(--s-4) var(--s-3) var(--s-6); }
+
+            .header {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: var(--s-3);
+            }
+
+            .header-actions {
+                justify-content: flex-start;
+                width: 100%;
+            }
+
+            .links-container { grid-template-columns: 1fr; }
+
+            .input-section { flex-wrap: wrap; gap: var(--s-2); padding: var(--s-2); }
+
+            .input-fields { flex-direction: column; width: 100%; gap: 4px; }
+            .input-label { width: 100%; border-right: none; padding: 0 0 0 var(--s-3); }
+            .add-btn { width: 100%; }
+
+            .stats-bar { flex-wrap: wrap; gap: var(--s-2); }
+            .stats-capacity { margin-left: 0; }
+
+            .app-footer { flex-direction: column; align-items: flex-start; gap: var(--s-2); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ヘッダー -->
+        <div class="header">
+            <div class="header-left">
+                <div class="brand-mark" aria-hidden="true"></div>
+                <h1>Linkpad</h1>
+                <span class="header-tag">Local Bookmarks</span>
+            </div>
+
+            <div class="header-actions">
+                <button class="utility-btn" id="noticeBtn" type="button" aria-expanded="false">注意事項</button>
+                <div class="header-sep" aria-hidden="true"></div>
+                <button class="utility-btn" id="exportBtn" type="button">エクスポート</button>
+                <button class="utility-btn" id="importBtn" type="button">インポート</button>
+                <input type="file" id="importFileInput" accept=".json,application/json" hidden>
+                <div class="header-sep" aria-hidden="true"></div>
+
+                <div class="font-controls" title="リンク名のフォントサイズ">
+                    <button class="font-btn" id="decreaseFont" type="button" aria-label="文字を小さく">−</button>
+                    <span class="font-size-display" id="fontSizeDisplay">16pt</span>
+                    <button class="font-btn" id="increaseFont" type="button" aria-label="文字を大きく">＋</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 注意事項 -->
+        <div class="notice-panel" id="noticePanel" hidden>
+            <div class="notice-title">注意事項</div>
+            <ul class="notice-list">
+                <li>Linkpadは、Webサイト・ローカルファイル・サーバーフォルダのパスをまとめて管理する、HTML単体の軽量ブックマークツールです。</li>
+                <li>会社PCなど、インストール不要で使いたい環境を想定しています。</li>
+                <li>データはブラウザのlocalStorageに保存されます。ブラウザ履歴やサイトデータを削除すると、登録情報が消える場合があります。PCを変更・履歴消去・ブラウザ初期化前は、データをエクスポートしてください。</li>
+                <li>file/serverパスは仕様上、直接開けずアドレスがコピーされます。コピー後、エクスプローラーやアドレスバーに貼り付けて開いてください。</li>
+            </ul>
+        </div>
+
+        <!-- 入力フォーム -->
+        <div class="input-section">
+            <span class="input-label">NEW</span>
+            <div class="input-fields">
+                <label class="field-wrap url-field">
+                    <span class="field-icon" aria-hidden="true">
+                        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a2.5 2.5 0 0 0 3.5 0l2-2a2.5 2.5 0 0 0-3.5-3.5L7 3.5"/><path d="M8 6a2.5 2.5 0 0 0-3.5 0l-2 2a2.5 2.5 0 0 0 3.5 3.5L7 10.5"/></svg>
+                    </span>
+                    <input type="text" id="urlInput" placeholder="https://example.com 　 C:\folder\file.xlsx 　 \\server\share">
+                </label>
+                <label class="field-wrap">
+                    <span class="field-icon" aria-hidden="true">
+                        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 3.5h9"/><path d="M2.5 7h6"/><path d="M2.5 10.5h9"/></svg>
+                    </span>
+                    <input type="text" id="nameInput" placeholder="表示名">
+                </label>
+            </div>
+            <button class="add-btn" id="addBtn" type="button">＋ 登録</button>
+        </div>
+
+        <!-- 統計バー -->
+        <div class="stats-bar" id="statsBar">
+            <span><strong id="statTotal">00</strong>/30 TOTAL</span>
+        </div>
+
+        <!-- リンク表示エリア（3列） -->
+        <div class="links-container">
+            <div class="links-column" data-column="1">
+                <div class="column-header">
+                    <span class="column-index">01</span>
+                    <span class="column-title" data-column="1" title="ダブルクリックで名前を変更">Column 1</span>
+                    <span class="column-count" data-count-for="1">0</span>
+                </div>
+                <div class="column-body" id="column1" data-column="1"></div>
+            </div>
+
+            <div class="links-column" data-column="2">
+                <div class="column-header">
+                    <span class="column-index">02</span>
+                    <span class="column-title" data-column="2" title="ダブルクリックで名前を変更">Column 2</span>
+                    <span class="column-count" data-count-for="2">0</span>
+                </div>
+                <div class="column-body" id="column2" data-column="2"></div>
+            </div>
+
+            <div class="links-column" data-column="3">
+                <div class="column-header">
+                    <span class="column-index">03</span>
+                    <span class="column-title" data-column="3" title="ダブルクリックで名前を変更">Column 3</span>
+                    <span class="column-count" data-count-for="3">0</span>
+                </div>
+                <div class="column-body" id="column3" data-column="3"></div>
+            </div>
+        </div>
+
+        <!-- フッター -->
+        <div class="app-footer">
+            <span>LINKPAD · LOCAL-ONLY · NO NETWORK</span>
+            <span class="footer-right">
+                <span><span class="kbd">Dbl-click</span> 改名</span>
+                <span><span class="kbd">Drag</span> 並べ替え</span>
+            </span>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">コピーしました</div>
+
+    <script>
+        const STORAGE_LINKS_KEY = 'linkpadData';
+        const STORAGE_FONT_SIZE_KEY = 'linkpadFontSize';
+        const STORAGE_COLUMNS_KEY = 'linkpadColumns';
+        const MAX_LINKS = 30;
+        const MAX_LINKS_PER_COLUMN = 10;
+        const LINK_CLICK_DELAY = 220;
+
+        let links = [];
+        let columns = [
+            { id: 1, name: 'Column 1' },
+            { id: 2, name: 'Column 2' },
+            { id: 3, name: 'Column 3' }
+        ];
+        let nextId = 1;
+        let fontSize = 16;
+        const fontSizes = [12, 16, 20];
+        let draggedLinkId = null;
+        let toastTimer = null;
+        let linkClickTimer = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                loadFromStorage();
+                seedSampleDataIfEmpty();
+                bindEvents();
+                setupColumnDropZones();
+                render();
+                updateFontSizeButtons();
+            } catch (error) {
+                console.error('初期化に失敗しました:', error);
+                alert('画面の初期化に失敗しました。ブラウザの開発者ツールでエラーを確認してください。');
+            }
+        });
+
+        function bindEvents() {
+            document.getElementById('addBtn').addEventListener('click', addLink);
+            document.getElementById('urlInput').addEventListener('keydown', handleInputEnter);
+            document.getElementById('nameInput').addEventListener('keydown', handleInputEnter);
+
+            document.getElementById('noticeBtn').addEventListener('click', toggleNoticePanel);
+
+            document.getElementById('increaseFont').addEventListener('click', increaseFontSize);
+            document.getElementById('decreaseFont').addEventListener('click', decreaseFontSize);
+
+            document.getElementById('exportBtn').addEventListener('click', exportBackup);
+            document.getElementById('importBtn').addEventListener('click', () => {
+                document.getElementById('importFileInput').click();
+            });
+            document.getElementById('importFileInput').addEventListener('change', importBackup);
+
+            document.querySelectorAll('.column-title').forEach(title => {
+                title.addEventListener('dblclick', () => startEditColumnTitle(title));
+            });
+        }
+
+        function handleInputEnter(e) {
+            if (e.key === 'Enter') {
+                addLink();
+            }
+        }
+
+        function toggleNoticePanel() {
+            const panel = document.getElementById('noticePanel');
+            const button = document.getElementById('noticeBtn');
+
+            const willOpen = panel.hidden;
+            panel.hidden = !willOpen;
+            button.setAttribute('aria-expanded', String(willOpen));
+        }
+
+        function loadFromStorage() {
+            let shouldSaveAfterMigration = false;
+
+            try {
+                const savedLinks = localStorage.getItem(STORAGE_LINKS_KEY);
+                const savedColumns = localStorage.getItem(STORAGE_COLUMNS_KEY);
+                const savedFontSize = localStorage.getItem(STORAGE_FONT_SIZE_KEY);
+
+                if (savedLinks) {
+                    const parsedLinks = JSON.parse(savedLinks);
+                    if (Array.isArray(parsedLinks)) {
+                        links = parsedLinks.slice(0, MAX_LINKS);
+                    }
+                }
+
+                if (savedColumns) {
+                    const parsedColumns = JSON.parse(savedColumns);
+                    if (Array.isArray(parsedColumns)) {
+                        columns = normalizeColumns(parsedColumns);
+                    }
+                }
+
+                if (savedFontSize) {
+                    const parsedFontSize = parseInt(savedFontSize, 10);
+                    if (fontSizes.includes(parsedFontSize)) {
+                        fontSize = parsedFontSize;
+                    }
+                }
+
+                if (needsMigration(links)) {
+                    migrateOldLinks();
+                    shouldSaveAfterMigration = true;
+                } else {
+                    normalizeLinkData();
+                }
+
+                links = normalizeLinksToColumnCapacity(links);
+                renumberOrders();
+
+                if (links.length > 0) {
+                    const ids = links.map(link => Number(link.id) || 0);
+                    nextId = Math.max(...ids) + 1;
+                }
+
+                if (shouldSaveAfterMigration) {
+                    saveToStorage();
+                }
+            } catch (error) {
+                console.error('データの読み込みに失敗しました:', error);
+                links = [];
+                columns = defaultColumns();
+                fontSize = 16;
+                alert('保存データの読み込みに失敗しました。データ形式が壊れている可能性があります。');
+            }
+        }
+
+        function saveToStorage() {
+            try {
+                localStorage.setItem(STORAGE_LINKS_KEY, JSON.stringify(links));
+                localStorage.setItem(STORAGE_COLUMNS_KEY, JSON.stringify(columns));
+                localStorage.setItem(STORAGE_FONT_SIZE_KEY, fontSize.toString());
+            } catch (error) {
+                console.error('データの保存に失敗しました:', error);
+                alert('データの保存に失敗しました。localStorageの容量またはブラウザ設定を確認してください。');
+            }
+        }
+
+        function defaultColumns() {
+            return [
+                { id: 1, name: 'Column 1' },
+                { id: 2, name: 'Column 2' },
+                { id: 3, name: 'Column 3' }
+            ];
+        }
+
+        function normalizeColumns(inputColumns) {
+            const defaults = defaultColumns();
+
+            return defaults.map(defaultColumn => {
+                const found = inputColumns.find(col => Number(col.id) === defaultColumn.id);
+                const name = found && typeof found.name === 'string' && found.name.trim()
+                    ? found.name.trim()
+                    : defaultColumn.name;
+
+                return {
+                    id: defaultColumn.id,
+                    name
+                };
+            });
+        }
+
+        function needsMigration(linkList) {
+            return linkList.some(link =>
+                typeof link.column === 'undefined' ||
+                typeof link.order === 'undefined'
+            );
+        }
+
+        function migrateOldLinks() {
+            links = links.map((link, index) => {
+                const column = Math.min(3, Math.floor(index / 10) + 1);
+                const order = (index % 10) + 1;
+                const detectedKind = link.kind || detectLinkKind(link.url) || 'web';
+
+                return {
+                    id: Number(link.id) || index + 1,
+                    url: String(link.url || ''),
+                    name: String(link.name || link.url || '名称未設定'),
+                    kind: detectedKind,
+                    column,
+                    order
+                };
+            });
+        }
+
+        function normalizeLinkData() {
+            links = links
+                .filter(link => link && typeof link === 'object')
+                .slice(0, MAX_LINKS)
+                .map((link, index) => {
+                    const detectedKind = link.kind || detectLinkKind(link.url) || 'web';
+                    const column = clampColumn(link.column);
+                    const order = Number.isFinite(Number(link.order)) ? Number(link.order) : index + 1;
+
+                    return {
+                        id: Number(link.id) || index + 1,
+                        url: String(link.url || ''),
+                        name: String(link.name || link.url || '名称未設定'),
+                        kind: detectedKind,
+                        column,
+                        order
+                    };
+                });
+        }
+
+        function clampColumn(value) {
+            const column = Number(value);
+            if (column === 1 || column === 2 || column === 3) return column;
+            return 1;
+        }
+
+        function countLinksInColumn(column, linkList = links) {
+            const normalizedColumn = clampColumn(column);
+            return linkList.filter(link => Number(link.column) === normalizedColumn).length;
+        }
+
+        function canMoveToColumn(sourceId, targetColumn) {
+            const sourceLink = links.find(link => Number(link.id) === Number(sourceId));
+            if (!sourceLink) return false;
+
+            const normalizedTargetColumn = clampColumn(targetColumn);
+
+            // 同じカラム内の並び替えは件数が増えないため許可する
+            if (Number(sourceLink.column) === normalizedTargetColumn) {
+                return true;
+            }
+
+            return countLinksInColumn(normalizedTargetColumn) < MAX_LINKS_PER_COLUMN;
+        }
+
+        function showColumnCapacityMessage() {
+            showToast('このカラムには最大10件まで登録できます');
+        }
+
+        function normalizeLinksToColumnCapacity(inputLinks) {
+            const buckets = { 1: [], 2: [], 3: [] };
+
+            const cleanedLinks = (Array.isArray(inputLinks) ? inputLinks : [])
+                .filter(link => link && typeof link === 'object')
+                .slice(0, MAX_LINKS)
+                .map((link, index) => {
+                    const url = String(link.url || '');
+                    const detectedKind = link.kind || detectLinkKind(url) || 'web';
+                    const order = Number.isFinite(Number(link.order)) ? Number(link.order) : index + 1;
+
+                    return {
+                        id: Number(link.id) || index + 1,
+                        url,
+                        name: String(link.name || url || '名称未設定'),
+                        kind: detectedKind,
+                        column: clampColumn(link.column),
+                        order,
+                        _originalIndex: index
+                    };
+                })
+                .sort((a, b) =>
+                    Number(a.column) - Number(b.column) ||
+                    Number(a.order) - Number(b.order) ||
+                    Number(a.id) - Number(b.id) ||
+                    Number(a._originalIndex) - Number(b._originalIndex)
+                );
+
+            cleanedLinks.forEach(link => {
+                let targetColumn = null;
+
+                for (let column = link.column; column <= 3; column++) {
+                    if (buckets[column].length < MAX_LINKS_PER_COLUMN) {
+                        targetColumn = column;
+                        break;
+                    }
+                }
+
+                // 3列目あふれなどに備え、前方に空きがあれば利用する
+                if (!targetColumn) {
+                    for (let column = 1; column <= 3; column++) {
+                        if (buckets[column].length < MAX_LINKS_PER_COLUMN) {
+                            targetColumn = column;
+                            break;
+                        }
+                    }
+                }
+
+                // 全カラム満杯の場合は破棄
+                if (!targetColumn) return;
+
+                delete link._originalIndex;
+                link.column = targetColumn;
+                link.order = buckets[targetColumn].length + 1;
+                buckets[targetColumn].push(link);
+            });
+
+            return buckets[1].concat(buckets[2], buckets[3]);
+        }
+
+        function renumberOrders() {
+            const normalized = [];
+
+            for (let column = 1; column <= 3; column++) {
+                const columnLinks = links
+                    .filter(link => Number(link.column) === column)
+                    .sort((a, b) => Number(a.order) - Number(b.order) || Number(a.id) - Number(b.id));
+
+                columnLinks.forEach((link, index) => {
+                    link.column = column;
+                    link.order = index + 1;
+                    normalized.push(link);
+                });
+            }
+
+            links = normalized;
+        }
+
+        function seedSampleDataIfEmpty() {
+            if (links.length > 0) return;
+
+            const sample = [
+                { column: 1, name: 'Notion — Team Wiki',      url: 'https://www.notion.so', kind: 'web' },
+                { column: 1, name: 'Linear — Sprint Board',   url: 'https://linear.app',    kind: 'web' },
+                { column: 1, name: 'GitHub — Repository',     url: 'https://github.com',    kind: 'web' },
+                { column: 1, name: 'Figma — Design Files',    url: 'https://figma.com',     kind: 'web' },
+                { column: 1, name: 'Slack — Workspace',       url: 'https://slack.com',     kind: 'web' },
+
+                { column: 2, name: '月次報告書テンプレート',  url: 'C:\\Documents\\Reports\\monthly.xlsx', kind: 'file' },
+                { column: 2, name: '議事録フォルダ',           url: 'C:\\Work\\Minutes\\2026',              kind: 'file' },
+                { column: 2, name: 'プロジェクト計画書',       url: 'C:\\Projects\\Q2-plan.docx',           kind: 'file' },
+                { column: 2, name: 'デスクトップ作業領域',     url: 'C:\\Users\\me\\Desktop',               kind: 'file' },
+
+                { column: 3, name: '共有ドライブ — 資料',     url: '\\\\fileserver\\share\\docs', kind: 'server' },
+                { column: 3, name: 'チーム共有フォルダ',       url: '\\\\nas01\\team\\2026',       kind: 'server' },
+                { column: 3, name: 'アーカイブ',               url: '\\\\backup01\\archive',       kind: 'server' }
+            ];
+
+            links = sample.map((item, index) => ({
+                id: index + 1,
+                url: item.url,
+                name: item.name,
+                kind: item.kind,
+                column: item.column,
+                order: 0
+            }));
+
+            columns = [
+                { id: 1, name: 'Web Apps' },
+                { id: 2, name: 'Local Files' },
+                { id: 3, name: 'File Server' }
+            ];
+
+            renumberOrders();
+            nextId = links.length + 1;
+        }
+
+        function addLink() {
+            const urlInput = document.getElementById('urlInput');
+            const nameInput = document.getElementById('nameInput');
+            const url = urlInput.value.trim();
+            const name = nameInput.value.trim();
+
+            if (!url || !name) {
+                alert('URLと表示名の両方を入力してください。');
+                return;
+            }
+
+            const kind = detectLinkKind(url);
+            if (!kind) {
+                alert('対応していない形式です。\n\n対応形式：\n・ https://... / http://... （Webサイト）\n・ C:\\フォルダ\\ファイル（ローカルファイル）\n・ file:///C:/... （ローカルファイル）\n・ \\\\サーバー名\\共有フォルダ（ファイルサーバー）');
+                return;
+            }
+
+            if (links.length >= MAX_LINKS) {
+                alert('リンクは最大30個までです。');
+                return;
+            }
+
+            const targetColumn = getFirstAvailableColumn();
+
+            if (!targetColumn) {
+                alert('リンクは最大30個までです。');
+                return;
+            }
+
+            const nextOrder = links.filter(link => Number(link.column) === targetColumn).length + 1;
+
+            links.push({
+                id: nextId++,
+                url,
+                name,
+                kind,
+                column: targetColumn,
+                order: nextOrder
+            });
+
+            renumberOrders();
+            urlInput.value = '';
+            nameInput.value = '';
+            saveToStorage();
+            render();
+        }
+
+        function getFirstAvailableColumn() {
+            for (let column = 1; column <= 3; column++) {
+                const count = links.filter(link => Number(link.column) === column).length;
+                if (count < MAX_LINKS_PER_COLUMN) {
+                    return column;
+                }
+            }
+
+            return null;
+        }
+
+        function detectLinkKind(url) {
+            if (!url || typeof url !== 'string') return null;
+            if (url.startsWith('http://') || url.startsWith('https://')) return 'web';
+            if (url.startsWith('file:///')) return 'file';
+            if (url.startsWith('\\\\') || url.startsWith('//')) return 'server';
+            if (/^[A-Za-z]:[\\\/]/.test(url)) return 'file';
+            return null;
+        }
+
+        function render() {
+            renderColumnTitles();
+
+            for (let column = 1; column <= 3; column++) {
+                const body = document.getElementById('column' + column);
+                body.innerHTML = '';
+
+                const columnLinks = links
+                    .filter(link => link.column === column)
+                    .sort((a, b) => a.order - b.order);
+
+                const countEl = document.querySelector('[data-count-for="' + column + '"]');
+                if (countEl) {
+                    if (columnLinks.length > 0) {
+                        countEl.textContent = String(columnLinks.length).padStart(2, '0');
+                        countEl.classList.remove('empty');
+                    } else {
+                        countEl.textContent = '00';
+                        countEl.classList.add('empty');
+                    }
+                }
+
+                if (columnLinks.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'empty-message';
+                    empty.innerHTML = column === 1 && links.length === 0
+                        ? 'No links yet<br>上のフォームから追加'
+                        : 'Drop here';
+                    body.appendChild(empty);
+                    continue;
+                }
+
+                columnLinks.forEach(link => {
+                    body.appendChild(createLinkElement(link));
+                });
+            }
+
+            renderStats();
+            applyFontSize();
+        }
+
+        function renderStats() {
+            const total = links.length;
+            const set = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = val;
+            };
+            set('statTotal', String(total).padStart(2, '0'));
+        }
+
+        function renderColumnTitles() {
+            document.querySelectorAll('.column-title').forEach(title => {
+                const columnId = Number(title.dataset.column);
+                const column = columns.find(col => col.id === columnId);
+                title.textContent = column ? column.name : 'Column ' + columnId;
+            });
+        }
+
+        function createLinkElement(link) {
+            const div = document.createElement('div');
+            div.className = 'link-item';
+            div.draggable = true;
+            div.dataset.id = link.id;
+            div.dataset.column = link.column;
+            div.dataset.order = link.order;
+
+            const handle = document.createElement('div');
+            handle.className = 'drag-handle';
+            handle.innerHTML = '<span></span><span></span><span></span>';
+
+            const kind = link.kind || detectLinkKind(link.url) || 'web';
+
+            const badge = document.createElement('span');
+            badge.className = 'link-badge ' + kind;
+            badge.textContent = kind === 'web' ? 'WEB' : kind === 'file' ? 'FILE' : 'SVR';
+
+            const a = document.createElement('a');
+            a.appendChild(document.createTextNode(link.name));
+            a.title = link.url;
+            a.href = kind === 'web' ? link.url : '#';
+
+            if (kind === 'web') {
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+            } else {
+                a.className = 'copy-link';
+            }
+
+            const icon = document.createElement('span');
+            icon.className = 'external-icon';
+            icon.setAttribute('aria-hidden', 'true');
+            if (kind === 'web') {
+                icon.innerHTML = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5H2.5v7h7v-2"/><path d="M7 2.5h2.5V5"/><path d="M5.5 6.5l4-4"/></svg>';
+            } else {
+                icon.innerHTML = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1"/><path d="M4 8H2.5V2.5H8V4"/></svg>';
+            }
+            a.appendChild(icon);
+
+            a.addEventListener('click', (e) => {
+                handleLinkClick(e, link);
+            });
+
+            a.addEventListener('dblclick', (e) => {
+                handleLinkDoubleClick(e, link.id);
+            });
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.type = 'button';
+            deleteBtn.textContent = '×';
+            deleteBtn.title = '削除';
+            deleteBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                deleteLink(link.id);
+            });
+
+            div.appendChild(handle);
+            div.appendChild(badge);
+            div.appendChild(a);
+            div.appendChild(deleteBtn);
+
+            div.addEventListener('dragstart', handleDragStart);
+            div.addEventListener('dragover', handleDragOverItem);
+            div.addEventListener('dragleave', handleDragLeaveItem);
+            div.addEventListener('drop', handleDropOnItem);
+            div.addEventListener('dragend', handleDragEnd);
+
+            return div;
+        }
+
+        function handleLinkClick(e, link) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            clearTimeout(linkClickTimer);
+
+            linkClickTimer = setTimeout(() => {
+                linkClickTimer = null;
+
+                const kind = link.kind || detectLinkKind(link.url) || 'web';
+
+                if (kind === 'web') {
+                    window.open(link.url, '_blank', 'noopener,noreferrer');
+                } else {
+                    copyPathToClipboard(link.url);
+                }
+            }, LINK_CLICK_DELAY);
+        }
+
+        function handleLinkDoubleClick(e, linkId) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            clearTimeout(linkClickTimer);
+            linkClickTimer = null;
+
+            startEditLinkName(e.currentTarget, linkId);
+        }
+
+        function startEditLinkName(anchorElement, linkId) {
+            const link = links.find(item => Number(item.id) === Number(linkId));
+            if (!link) return;
+
+            const originalName = String(link.name || link.url || '名称未設定');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'link-name-input';
+            input.value = originalName;
+            input.title = 'Enterで保存 / Escでキャンセル';
+
+            const linkItem = anchorElement.closest('.link-item');
+            if (linkItem) {
+                linkItem.classList.add('editing');
+                linkItem.draggable = false;
+            }
+
+            anchorElement.replaceWith(input);
+            input.style.fontSize = fontSize + 'pt';
+
+            let finished = false;
+            let canceled = false;
+
+            const cleanup = () => {
+                input.removeEventListener('keydown', keyHandler);
+                input.removeEventListener('blur', blurHandler);
+            };
+
+            const finish = (shouldSave) => {
+                if (finished) return;
+                finished = true;
+                cleanup();
+
+                const newName = input.value.trim();
+
+                if (shouldSave && newName) {
+                    link.name = newName;
+                    saveToStorage();
+                }
+
+                render();
+            };
+
+            const keyHandler = (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    finish(true);
+                }
+
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    canceled = true;
+                    finish(false);
+                }
+            };
+
+            const blurHandler = () => {
+                if (!canceled) {
+                    finish(true);
+                }
+            };
+
+            input.addEventListener('keydown', keyHandler);
+            input.addEventListener('blur', blurHandler);
+
+            requestAnimationFrame(() => {
+                input.focus();
+                input.select();
+            });
+        }
+
+        function deleteLink(id) {
+            links = links.filter(link => Number(link.id) !== Number(id));
+            renumberOrders();
+            saveToStorage();
+            render();
+        }
+
+        async function copyPathToClipboard(path) {
+            try {
+                if (!navigator.clipboard || !window.isSecureContext) {
+                    throw new Error('Clipboard API is not available.');
+                }
+
+                await navigator.clipboard.writeText(path);
+                showToast('コピーしました');
+            } catch (error) {
+                console.warn('クリップボードへのコピーに失敗しました:', error);
+                alert('自動コピーに失敗しました。以下のパスを手動でコピーしてください。\n\n' + path);
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 1600);
+        }
+
+        function setupColumnDropZones() {
+            document.querySelectorAll('.links-column, .column-body').forEach(zone => {
+                zone.addEventListener('dragover', handleDragOverColumn);
+                zone.addEventListener('dragleave', handleDragLeaveColumn);
+                zone.addEventListener('drop', handleDropOnColumn);
+            });
+        }
+
+        function handleDragStart(e) {
+            draggedLinkId = Number(this.dataset.id);
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', String(draggedLinkId));
+        }
+
+        function handleDragOverItem(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (!draggedLinkId || Number(this.dataset.id) === draggedLinkId) return;
+
+            clearDropIndicators();
+            const rect = this.getBoundingClientRect();
+            const isBefore = e.clientY < rect.top + rect.height / 2;
+            this.classList.add(isBefore ? 'drop-before' : 'drop-after');
+            e.dataTransfer.dropEffect = 'move';
+        }
+
+        function handleDragLeaveItem() {
+            this.classList.remove('drop-before', 'drop-after');
+        }
+
+        function handleDropOnItem(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (!draggedLinkId || Number(this.dataset.id) === draggedLinkId) {
+                clearDropIndicators();
+                return;
+            }
+
+            const targetId = Number(this.dataset.id);
+            const rect = this.getBoundingClientRect();
+            const placeBefore = e.clientY < rect.top + rect.height / 2;
+
+            const moved = moveLinkToTarget(draggedLinkId, targetId, placeBefore);
+            clearDropIndicators();
+
+            if (moved) {
+                saveToStorage();
+                render();
+            }
+        }
+
+        function handleDragOverColumn(e) {
+            if (!draggedLinkId) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+
+            const column = e.currentTarget.closest('.links-column');
+            if (column) {
+                column.classList.add('column-over');
+            }
+        }
+
+        function handleDragLeaveColumn(e) {
+            const column = e.currentTarget.closest('.links-column');
+            if (!column) return;
+
+            const related = e.relatedTarget;
+            if (!related || !column.contains(related)) {
+                column.classList.remove('column-over');
+            }
+        }
+
+        function handleDropOnColumn(e) {
+            e.preventDefault();
+
+            if (!draggedLinkId) return;
+
+            const droppedOnItem = e.target.closest('.link-item');
+            if (droppedOnItem) return;
+
+            const columnElement = e.currentTarget.closest('.links-column');
+            if (!columnElement) return;
+
+            const targetColumn = Number(columnElement.dataset.column);
+            const moved = moveLinkToColumnEnd(draggedLinkId, targetColumn);
+            clearDropIndicators();
+
+            if (moved) {
+                saveToStorage();
+                render();
+            }
+        }
+
+        function handleDragEnd() {
+            clearDropIndicators();
+            draggedLinkId = null;
+        }
+
+        function clearDropIndicators() {
+            document.querySelectorAll('.drop-before, .drop-after').forEach(el => {
+                el.classList.remove('drop-before', 'drop-after');
+            });
+
+            document.querySelectorAll('.column-over').forEach(el => {
+                el.classList.remove('column-over');
+            });
+        }
+
+        function moveLinkToTarget(sourceId, targetId, placeBefore) {
+            const sourceLink = links.find(link => Number(link.id) === Number(sourceId));
+            const targetLink = links.find(link => Number(link.id) === Number(targetId));
+            if (!sourceLink || !targetLink) return false;
+
+            const targetColumn = clampColumn(targetLink.column);
+
+            if (!canMoveToColumn(sourceId, targetColumn)) {
+                showColumnCapacityMessage();
+                return false;
+            }
+
+            const sourceWithoutTarget = links.filter(link => Number(link.id) !== Number(sourceId));
+
+            let targetColumnLinks = sourceWithoutTarget
+                .filter(link => Number(link.column) === targetColumn)
+                .sort((a, b) => Number(a.order) - Number(b.order) || Number(a.id) - Number(b.id));
+
+            const targetIndex = targetColumnLinks.findIndex(link => Number(link.id) === Number(targetId));
+            if (targetIndex < 0) return false;
+
+            const insertIndex = placeBefore ? targetIndex : targetIndex + 1;
+
+            sourceLink.column = targetColumn;
+            targetColumnLinks.splice(insertIndex, 0, sourceLink);
+
+            const otherLinks = sourceWithoutTarget.filter(link => Number(link.column) !== targetColumn);
+
+            targetColumnLinks.forEach((link, index) => {
+                link.column = targetColumn;
+                link.order = index + 1;
+            });
+
+            links = otherLinks.concat(targetColumnLinks);
+            renumberOrders();
+            return true;
+        }
+
+        function moveLinkToColumnEnd(sourceId, targetColumn) {
+            const sourceLink = links.find(link => Number(link.id) === Number(sourceId));
+            if (!sourceLink) return false;
+
+            const normalizedTargetColumn = clampColumn(targetColumn);
+
+            if (!canMoveToColumn(sourceId, normalizedTargetColumn)) {
+                showColumnCapacityMessage();
+                return false;
+            }
+
+            sourceLink.column = normalizedTargetColumn;
+            sourceLink.order = 9999;
+            renumberOrders();
+            return true;
+        }
+
+        function startEditColumnTitle(titleElement) {
+            const columnId = Number(titleElement.dataset.column);
+            const column = columns.find(col => col.id === columnId);
+            const originalName = column ? column.name : 'Column ' + columnId;
+
+            titleElement.contentEditable = 'true';
+            titleElement.classList.add('editing');
+            titleElement.textContent = originalName;
+            titleElement.focus();
+
+            const selection = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(titleElement);
+            selection.removeAllRanges();
+            selection.addRange(range);
+
+            const finish = () => {
+                finishEditColumnTitle(titleElement, columnId, originalName);
+            };
+
+            const keyHandler = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    titleElement.blur();
+                }
+
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    titleElement.textContent = originalName;
+                    titleElement.blur();
+                }
+            };
+
+            titleElement.addEventListener('keydown', keyHandler);
+            titleElement.addEventListener('blur', finish, { once: true });
+
+            titleElement.dataset.keyHandlerAttached = 'true';
+            titleElement._columnTitleKeyHandler = keyHandler;
+        }
+
+        function finishEditColumnTitle(titleElement, columnId, originalName) {
+            const keyHandler = titleElement._columnTitleKeyHandler;
+            if (keyHandler) {
+                titleElement.removeEventListener('keydown', keyHandler);
+                delete titleElement._columnTitleKeyHandler;
+            }
+
+            const newName = titleElement.textContent.trim() || originalName;
+            const column = columns.find(col => col.id === columnId);
+
+            if (column) {
+                column.name = newName;
+            } else {
+                columns.push({ id: columnId, name: newName });
+                columns = normalizeColumns(columns);
+            }
+
+            titleElement.contentEditable = 'false';
+            titleElement.classList.remove('editing');
+            titleElement.textContent = newName;
+
+            saveToStorage();
+        }
+
+        function increaseFontSize() {
+            const i = fontSizes.indexOf(fontSize);
+            if (i < fontSizes.length - 1) {
+                fontSize = fontSizes[i + 1];
+                applyFontSize();
+                saveToStorage();
+                updateFontSizeButtons();
+            }
+        }
+
+        function decreaseFontSize() {
+            const i = fontSizes.indexOf(fontSize);
+            if (i > 0) {
+                fontSize = fontSizes[i - 1];
+                applyFontSize();
+                saveToStorage();
+                updateFontSizeButtons();
+            }
+        }
+
+        function applyFontSize() {
+            document.querySelectorAll('.link-item a').forEach(link => {
+                link.style.fontSize = fontSize + 'pt';
+            });
+
+            document.querySelectorAll('.link-name-input').forEach(input => {
+                input.style.fontSize = fontSize + 'pt';
+            });
+
+            const display = document.getElementById('fontSizeDisplay');
+            if (display) {
+                display.textContent = fontSize + 'pt';
+            }
+        }
+
+        function updateFontSizeButtons() {
+            const i = fontSizes.indexOf(fontSize);
+            document.getElementById('decreaseFont').disabled = i <= 0;
+            document.getElementById('increaseFont').disabled = i >= fontSizes.length - 1;
+        }
+
+        function exportBackup() {
+            try {
+                renumberOrders();
+
+                const backup = {
+                    version: 2,
+                    exportedAt: new Date().toISOString(),
+                    links,
+                    columns,
+                    fontSize
+                };
+
+                const json = JSON.stringify(backup, null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `linkpad-backup-${yyyy}${mm}${dd}.json`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+
+                URL.revokeObjectURL(url);
+                showToast('エクスポートしました');
+            } catch (error) {
+                console.error('エクスポートに失敗しました:', error);
+                alert('エクスポートに失敗しました。');
+            }
+        }
+
+        function importBackup(e) {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+
+            reader.onload = () => {
+                try {
+                    const data = JSON.parse(String(reader.result || ''));
+
+                    if (!isValidBackup(data)) {
+                        throw new Error('バックアップ形式が正しくありません。');
+                    }
+
+                    const ok = confirm('現在のLinkpadデータを上書きしてインポートします。\nこの操作は元に戻せません。\n\n続行しますか？');
+                    if (!ok) return;
+
+                    links = normalizeLinksToColumnCapacity(data.links);
+
+                    columns = normalizeColumns(data.columns || defaultColumns());
+
+                    if (fontSizes.includes(Number(data.fontSize))) {
+                        fontSize = Number(data.fontSize);
+                    }
+
+                    renumberOrders();
+
+                    if (links.length > 0) {
+                        nextId = Math.max(...links.map(link => Number(link.id) || 0)) + 1;
+                    } else {
+                        nextId = 1;
+                    }
+
+                    saveToStorage();
+                    render();
+                    updateFontSizeButtons();
+                    showToast('インポートしました');
+                } catch (error) {
+                    console.error('インポートに失敗しました:', error);
+                    alert('インポートに失敗しました。\nJSONファイルの形式を確認してください。');
+                } finally {
+                    e.target.value = '';
+                }
+            };
+
+            reader.onerror = () => {
+                alert('ファイルの読み込みに失敗しました。');
+                e.target.value = '';
+            };
+
+            reader.readAsText(file, 'utf-8');
+        }
+
+        function isValidBackup(data) {
+            if (!data || typeof data !== 'object') return false;
+            if (!Array.isArray(data.links)) return false;
+
+            const validLinks = data.links.every(link =>
+                link &&
+                typeof link === 'object' &&
+                typeof link.url === 'string' &&
+                typeof link.name === 'string'
+            );
+
+            if (!validLinks) return false;
+
+            if (data.columns !== undefined && !Array.isArray(data.columns)) return false;
+            if (data.fontSize !== undefined && !fontSizes.includes(Number(data.fontSize))) return false;
+
+            return true;
+        }
+    </script>
+</body>
+</html>
