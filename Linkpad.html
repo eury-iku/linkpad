@@ -834,6 +834,7 @@
             color: var(--surface);
             border-radius: var(--radius);
             padding: 8px 14px;
+            max-width: min(900px, calc(100vw - 40px));
             font-size: 12px;
             font-weight: 500;
             box-shadow: var(--shadow-lg);
@@ -846,7 +847,9 @@
             display: inline-flex;
             align-items: center;
             gap: var(--s-2);
-            line-height: 1;
+            line-height: 1.4;
+            white-space: normal;
+            word-break: break-all;
         }
 
         .toast.show {
@@ -931,7 +934,7 @@
                 <li>Linkpadは、Webサイト・ローカルファイル・サーバーフォルダのパスをまとめて管理する、HTML単体の軽量ブックマークツールです。</li>
                 <li>会社PCなど、インストール不要で使いたい環境を想定しています。</li>
                 <li>データはブラウザのlocalStorageに保存されます。ブラウザ履歴やサイトデータを削除すると、登録情報が消える場合があります。PCを変更・履歴消去・ブラウザ初期化前は、データをエクスポートしてください。</li>
-                <li>file/serverパスは仕様上、直接開けずアドレスがコピーされます。コピー後、エクスプローラーやアドレスバーに貼り付けて開いてください。</li>
+                <li>fileパスは仕様上、直接開けずアドレスがコピーされます。serverパスは新しいタブで開きますが、ブラウザ設定により開けない場合があります。</li>
             </ul>
         </div>
 
@@ -957,7 +960,7 @@
 
         <!-- 統計バー -->
         <div class="stats-bar" id="statsBar">
-            <span><strong id="statTotal">00</strong>/30 TOTAL</span>
+            <span><strong id="statTotal">00</strong> TOTAL</span>
         </div>
 
         <!-- リンク表示エリア（3列） -->
@@ -1006,9 +1009,8 @@
         const STORAGE_LINKS_KEY = 'linkpadData';
         const STORAGE_FONT_SIZE_KEY = 'linkpadFontSize';
         const STORAGE_COLUMNS_KEY = 'linkpadColumns';
-        const MAX_LINKS = 30;
-        const MAX_LINKS_PER_COLUMN = 10;
         const LINK_CLICK_DELAY = 220;
+        const TOAST_DURATION_MS = 3200;
 
         let links = [];
         let columns = [
@@ -1084,7 +1086,7 @@
                 if (savedLinks) {
                     const parsedLinks = JSON.parse(savedLinks);
                     if (Array.isArray(parsedLinks)) {
-                        links = parsedLinks.slice(0, MAX_LINKS);
+                        links = parsedLinks;
                     }
                 }
 
@@ -1109,7 +1111,7 @@
                     normalizeLinkData();
                 }
 
-                links = normalizeLinksToColumnCapacity(links);
+                links = normalizeLinks(links);
                 renumberOrders();
 
                 if (links.length > 0) {
@@ -1191,7 +1193,6 @@
         function normalizeLinkData() {
             links = links
                 .filter(link => link && typeof link === 'object')
-                .slice(0, MAX_LINKS)
                 .map((link, index) => {
                     const detectedKind = link.kind || detectLinkKind(link.url) || 'web';
                     const column = clampColumn(link.column);
@@ -1214,35 +1215,9 @@
             return 1;
         }
 
-        function countLinksInColumn(column, linkList = links) {
-            const normalizedColumn = clampColumn(column);
-            return linkList.filter(link => Number(link.column) === normalizedColumn).length;
-        }
-
-        function canMoveToColumn(sourceId, targetColumn) {
-            const sourceLink = links.find(link => Number(link.id) === Number(sourceId));
-            if (!sourceLink) return false;
-
-            const normalizedTargetColumn = clampColumn(targetColumn);
-
-            // 同じカラム内の並び替えは件数が増えないため許可する
-            if (Number(sourceLink.column) === normalizedTargetColumn) {
-                return true;
-            }
-
-            return countLinksInColumn(normalizedTargetColumn) < MAX_LINKS_PER_COLUMN;
-        }
-
-        function showColumnCapacityMessage() {
-            showToast('このカラムには最大10件まで登録できます');
-        }
-
-        function normalizeLinksToColumnCapacity(inputLinks) {
-            const buckets = { 1: [], 2: [], 3: [] };
-
-            const cleanedLinks = (Array.isArray(inputLinks) ? inputLinks : [])
+        function normalizeLinks(inputLinks) {
+            return (Array.isArray(inputLinks) ? inputLinks : [])
                 .filter(link => link && typeof link === 'object')
-                .slice(0, MAX_LINKS)
                 .map((link, index) => {
                     const url = String(link.url || '');
                     const detectedKind = link.kind || detectLinkKind(url) || 'web';
@@ -1254,47 +1229,14 @@
                         name: String(link.name || url || '名称未設定'),
                         kind: detectedKind,
                         column: clampColumn(link.column),
-                        order,
-                        _originalIndex: index
+                        order
                     };
                 })
                 .sort((a, b) =>
                     Number(a.column) - Number(b.column) ||
                     Number(a.order) - Number(b.order) ||
-                    Number(a.id) - Number(b.id) ||
-                    Number(a._originalIndex) - Number(b._originalIndex)
+                    Number(a.id) - Number(b.id)
                 );
-
-            cleanedLinks.forEach(link => {
-                let targetColumn = null;
-
-                for (let column = link.column; column <= 3; column++) {
-                    if (buckets[column].length < MAX_LINKS_PER_COLUMN) {
-                        targetColumn = column;
-                        break;
-                    }
-                }
-
-                // 3列目あふれなどに備え、前方に空きがあれば利用する
-                if (!targetColumn) {
-                    for (let column = 1; column <= 3; column++) {
-                        if (buckets[column].length < MAX_LINKS_PER_COLUMN) {
-                            targetColumn = column;
-                            break;
-                        }
-                    }
-                }
-
-                // 全カラム満杯の場合は破棄
-                if (!targetColumn) return;
-
-                delete link._originalIndex;
-                link.column = targetColumn;
-                link.order = buckets[targetColumn].length + 1;
-                buckets[targetColumn].push(link);
-            });
-
-            return buckets[1].concat(buckets[2], buckets[3]);
         }
 
         function renumberOrders() {
@@ -1371,27 +1313,13 @@
                 return;
             }
 
-            if (links.length >= MAX_LINKS) {
-                alert('リンクは最大30個までです。');
-                return;
-            }
-
-            const targetColumn = getFirstAvailableColumn();
-
-            if (!targetColumn) {
-                alert('リンクは最大30個までです。');
-                return;
-            }
-
-            const nextOrder = links.filter(link => Number(link.column) === targetColumn).length + 1;
-
             links.push({
                 id: nextId++,
                 url,
                 name,
                 kind,
-                column: targetColumn,
-                order: nextOrder
+                column: 1,
+                order: 0
             });
 
             renumberOrders();
@@ -1399,17 +1327,6 @@
             nameInput.value = '';
             saveToStorage();
             render();
-        }
-
-        function getFirstAvailableColumn() {
-            for (let column = 1; column <= 3; column++) {
-                const count = links.filter(link => Number(link.column) === column).length;
-                if (count < MAX_LINKS_PER_COLUMN) {
-                    return column;
-                }
-            }
-
-            return null;
         }
 
         function detectLinkKind(url) {
@@ -1500,9 +1417,9 @@
             const a = document.createElement('a');
             a.appendChild(document.createTextNode(link.name));
             a.title = link.url;
-            a.href = kind === 'web' ? link.url : '#';
+            a.href = kind === 'server' ? toFileUrl(link.url) : kind === 'web' ? link.url : '#';
 
-            if (kind === 'web') {
+            if (kind === 'web' || kind === 'server') {
                 a.target = '_blank';
                 a.rel = 'noopener noreferrer';
             } else {
@@ -1512,7 +1429,7 @@
             const icon = document.createElement('span');
             icon.className = 'external-icon';
             icon.setAttribute('aria-hidden', 'true');
-            if (kind === 'web') {
+            if (kind === 'web' || kind === 'server') {
                 icon.innerHTML = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5H2.5v7h7v-2"/><path d="M7 2.5h2.5V5"/><path d="M5.5 6.5l4-4"/></svg>';
             } else {
                 icon.innerHTML = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1"/><path d="M4 8H2.5V2.5H8V4"/></svg>';
@@ -1564,11 +1481,34 @@
                 const kind = link.kind || detectLinkKind(link.url) || 'web';
 
                 if (kind === 'web') {
-                    window.open(link.url, '_blank', 'noopener,noreferrer');
-                } else {
-                    copyPathToClipboard(link.url);
+                    openInNewTab(link.url, link.url);
+                    return;
                 }
+
+                if (kind === 'server') {
+                    openInNewTab(toFileUrl(link.url), link.url);
+                    return;
+                }
+
+                copyPathToClipboard(link.url);
             }, LINK_CLICK_DELAY);
+        }
+
+        function toFileUrl(path) {
+            const normalizedPath = String(path || '').replace(/\\/g, '/').replace(/^\/+/, '');
+            return 'file://///' + normalizedPath;
+        }
+
+        function openInNewTab(url, fallbackPath) {
+            try {
+                const opened = window.open(url, '_blank', 'noopener,noreferrer');
+                if (!opened) {
+                    copyPathToClipboard(fallbackPath, '開けないためコピーしました');
+                }
+            } catch (error) {
+                console.warn('新しいタブで開けませんでした:', error);
+                copyPathToClipboard(fallbackPath, '開けないためコピーしました');
+            }
         }
 
         function handleLinkDoubleClick(e, linkId) {
@@ -1659,14 +1599,14 @@
             render();
         }
 
-        async function copyPathToClipboard(path) {
+        async function copyPathToClipboard(path, successMessage = 'コピーしました') {
             try {
                 if (!navigator.clipboard || !window.isSecureContext) {
                     throw new Error('Clipboard API is not available.');
                 }
 
                 await navigator.clipboard.writeText(path);
-                showToast('コピーしました');
+                showToast(successMessage + '　' + path);
             } catch (error) {
                 console.warn('クリップボードへのコピーに失敗しました:', error);
                 alert('自動コピーに失敗しました。以下のパスを手動でコピーしてください。\n\n' + path);
@@ -1681,7 +1621,7 @@
             clearTimeout(toastTimer);
             toastTimer = setTimeout(() => {
                 toast.classList.remove('show');
-            }, 1600);
+            }, TOAST_DURATION_MS);
         }
 
         function setupColumnDropZones() {
@@ -1802,11 +1742,6 @@
 
             const targetColumn = clampColumn(targetLink.column);
 
-            if (!canMoveToColumn(sourceId, targetColumn)) {
-                showColumnCapacityMessage();
-                return false;
-            }
-
             const sourceWithoutTarget = links.filter(link => Number(link.id) !== Number(sourceId));
 
             let targetColumnLinks = sourceWithoutTarget
@@ -1838,11 +1773,6 @@
             if (!sourceLink) return false;
 
             const normalizedTargetColumn = clampColumn(targetColumn);
-
-            if (!canMoveToColumn(sourceId, normalizedTargetColumn)) {
-                showColumnCapacityMessage();
-                return false;
-            }
 
             sourceLink.column = normalizedTargetColumn;
             sourceLink.order = 9999;
@@ -2008,7 +1938,7 @@
                     const ok = confirm('現在のLinkpadデータを上書きしてインポートします。\nこの操作は元に戻せません。\n\n続行しますか？');
                     if (!ok) return;
 
-                    links = normalizeLinksToColumnCapacity(data.links);
+                    links = normalizeLinks(data.links);
 
                     columns = normalizeColumns(data.columns || defaultColumns());
 
