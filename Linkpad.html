@@ -1493,8 +1493,22 @@
         }
 
         function toFileUrl(path) {
-            const normalizedPath = String(path || '').replace(/\\/g, '/').replace(/^\/+/, '');
-            return 'file://///' + normalizedPath;
+            const rawPath = String(path || '');
+
+            if (rawPath.startsWith('file:///')) {
+                return rawPath;
+            }
+
+            if (rawPath.startsWith('\\\\') || rawPath.startsWith('//')) {
+                const normalized = rawPath.replace(/\\/g, '/').replace(/^\/\//, '');
+                return 'file:////' + normalized;
+            }
+
+            if (/^[A-Za-z]:[\\\/]/.test(rawPath)) {
+                return 'file:///' + rawPath.replace(/\\/g, '/');
+            }
+
+            return rawPath;
         }
 
         function openInNewTab(url, fallbackPath) {
