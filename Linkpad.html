@@ -1305,11 +1305,7 @@
                 return;
             }
 
-            const kind = detectLinkKind(url);
-            if (!kind) {
-                alert('対応していない形式です。\n\n対応形式：\n・ https://... / http://... （Webサイト）\n・ C:\\フォルダ\\ファイル（ローカルファイル）\n・ file:///C:/... （ローカルファイル）\n・ \\\\サーバー名\\共有フォルダ（ファイルサーバー）');
-                return;
-            }
+            const kind = detectLinkKind(url) || 'web';
 
             links.push({
                 id: nextId++,
