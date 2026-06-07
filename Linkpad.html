@@ -508,6 +508,14 @@
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             gap: var(--s-3);
+            align-items: start;
+        }
+
+        .column-lane {
+            display: flex;
+            flex-direction: column;
+            gap: var(--s-3);
+            min-width: 0;
         }
 
         .links-column {
@@ -520,6 +528,14 @@
             display: flex;
             flex-direction: column;
             box-shadow: var(--shadow-xs);
+        }
+
+        .links-column.collapsed {
+            min-height: 0;
+        }
+
+        .links-column.collapsed .column-header {
+            border-bottom-color: transparent;
         }
 
         .links-column.column-over {
@@ -597,10 +613,37 @@
             border-color: transparent;
         }
 
+        .column-collapse-btn {
+            width: 22px;
+            height: 22px;
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            color: var(--ink-500);
+            cursor: pointer;
+            font-size: 10px;
+            line-height: 1;
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.1s ease, color 0.1s ease, border-color 0.1s ease;
+        }
+
+        .column-collapse-btn:hover {
+            background: var(--ink-100);
+            color: var(--ink-900);
+            border-color: var(--border);
+        }
+
         .column-body {
             padding: var(--s-1);
             flex: 1;
             min-height: 300px;
+        }
+
+        .column-body[hidden] {
+            display: none;
         }
 
         /* ━━━━━━━━━━━━━━━━━━ LINK ITEMS ━━━━━━━━━━━━━━━━━━ */
@@ -961,33 +1004,72 @@
             <span><strong id="statTotal">00</strong> TOTAL</span>
         </div>
 
-        <!-- リンク表示エリア（3列） -->
+        <!-- リンク表示エリア（3つの縦レーンで3列 x 2段に見せる） -->
         <div class="links-container">
-            <div class="links-column" data-column="1">
-                <div class="column-header">
-                    <span class="column-index">01</span>
-                    <span class="column-title" data-column="1" title="ダブルクリックで名前を変更">Column 1</span>
-                    <span class="column-count" data-count-for="1">0</span>
+            <div class="column-lane">
+                <div class="links-column" data-column="1">
+                    <div class="column-header">
+                        <span class="column-index">01</span>
+                        <span class="column-title" data-column="1" title="ダブルクリックで名前を変更">Column 1</span>
+                        <span class="column-count" data-count-for="1">0</span>
+                        <button class="column-collapse-btn" type="button" data-collapse-for="1" aria-label="Column 1を折りたたむ" aria-expanded="true">▲</button>
+                    </div>
+                    <div class="column-body" id="column1" data-column="1"></div>
                 </div>
-                <div class="column-body" id="column1" data-column="1"></div>
+
+                <div class="links-column" data-column="4">
+                    <div class="column-header">
+                        <span class="column-index">04</span>
+                        <span class="column-title" data-column="4" title="ダブルクリックで名前を変更">Column 4</span>
+                        <span class="column-count" data-count-for="4">0</span>
+                        <button class="column-collapse-btn" type="button" data-collapse-for="4" aria-label="Column 4を折りたたむ" aria-expanded="true">▲</button>
+                    </div>
+                    <div class="column-body" id="column4" data-column="4"></div>
+                </div>
             </div>
 
-            <div class="links-column" data-column="2">
-                <div class="column-header">
-                    <span class="column-index">02</span>
-                    <span class="column-title" data-column="2" title="ダブルクリックで名前を変更">Column 2</span>
-                    <span class="column-count" data-count-for="2">0</span>
+            <div class="column-lane">
+                <div class="links-column" data-column="2">
+                    <div class="column-header">
+                        <span class="column-index">02</span>
+                        <span class="column-title" data-column="2" title="ダブルクリックで名前を変更">Column 2</span>
+                        <span class="column-count" data-count-for="2">0</span>
+                        <button class="column-collapse-btn" type="button" data-collapse-for="2" aria-label="Column 2を折りたたむ" aria-expanded="true">▲</button>
+                    </div>
+                    <div class="column-body" id="column2" data-column="2"></div>
                 </div>
-                <div class="column-body" id="column2" data-column="2"></div>
+
+                <div class="links-column" data-column="5">
+                    <div class="column-header">
+                        <span class="column-index">05</span>
+                        <span class="column-title" data-column="5" title="ダブルクリックで名前を変更">Column 5</span>
+                        <span class="column-count" data-count-for="5">0</span>
+                        <button class="column-collapse-btn" type="button" data-collapse-for="5" aria-label="Column 5を折りたたむ" aria-expanded="true">▲</button>
+                    </div>
+                    <div class="column-body" id="column5" data-column="5"></div>
+                </div>
             </div>
 
-            <div class="links-column" data-column="3">
-                <div class="column-header">
-                    <span class="column-index">03</span>
-                    <span class="column-title" data-column="3" title="ダブルクリックで名前を変更">Column 3</span>
-                    <span class="column-count" data-count-for="3">0</span>
+            <div class="column-lane">
+                <div class="links-column" data-column="3">
+                    <div class="column-header">
+                        <span class="column-index">03</span>
+                        <span class="column-title" data-column="3" title="ダブルクリックで名前を変更">Column 3</span>
+                        <span class="column-count" data-count-for="3">0</span>
+                        <button class="column-collapse-btn" type="button" data-collapse-for="3" aria-label="Column 3を折りたたむ" aria-expanded="true">▲</button>
+                    </div>
+                    <div class="column-body" id="column3" data-column="3"></div>
                 </div>
-                <div class="column-body" id="column3" data-column="3"></div>
+
+                <div class="links-column" data-column="6">
+                    <div class="column-header">
+                        <span class="column-index">06</span>
+                        <span class="column-title" data-column="6" title="ダブルクリックで名前を変更">Column 6</span>
+                        <span class="column-count" data-count-for="6">0</span>
+                        <button class="column-collapse-btn" type="button" data-collapse-for="6" aria-label="Column 6を折りたたむ" aria-expanded="true">▲</button>
+                    </div>
+                    <div class="column-body" id="column6" data-column="6"></div>
+                </div>
             </div>
         </div>
 
@@ -1009,13 +1091,10 @@
         const STORAGE_COLUMNS_KEY = 'linkpadColumns';
         const LINK_CLICK_DELAY = 220;
         const TOAST_DURATION_MS = 3200;
+        const COLUMN_COUNT = 6;
 
         let links = [];
-        let columns = [
-            { id: 1, name: 'Column 1' },
-            { id: 2, name: 'Column 2' },
-            { id: 3, name: 'Column 3' }
-        ];
+        let columns = defaultColumns();
         let nextId = 1;
         let fontSize = 16;
         const fontSizes = [12, 16, 20];
@@ -1055,6 +1134,10 @@
 
             document.querySelectorAll('.column-title').forEach(title => {
                 title.addEventListener('dblclick', () => startEditColumnTitle(title));
+            });
+
+            document.querySelectorAll('.column-collapse-btn').forEach(button => {
+                button.addEventListener('click', () => toggleColumnCollapsed(Number(button.dataset.collapseFor)));
             });
         }
 
@@ -1141,11 +1224,15 @@
         }
 
         function defaultColumns() {
-            return [
-                { id: 1, name: 'Column 1' },
-                { id: 2, name: 'Column 2' },
-                { id: 3, name: 'Column 3' }
-            ];
+            return Array.from({ length: COLUMN_COUNT }, (_, index) => {
+                const id = index + 1;
+
+                return {
+                    id,
+                    name: 'Column ' + id,
+                    collapsed: false
+                };
+            });
         }
 
         function normalizeColumns(inputColumns) {
@@ -1159,7 +1246,8 @@
 
                 return {
                     id: defaultColumn.id,
-                    name
+                    name,
+                    collapsed: found ? found.collapsed === true : false
                 };
             });
         }
@@ -1173,7 +1261,7 @@
 
         function migrateOldLinks() {
             links = links.map((link, index) => {
-                const column = Math.min(3, Math.floor(index / 10) + 1);
+                const column = Math.min(COLUMN_COUNT, Math.floor(index / 10) + 1);
                 const order = (index % 10) + 1;
                 const detectedKind = link.kind || detectLinkKind(link.url) || 'web';
 
@@ -1209,7 +1297,7 @@
 
         function clampColumn(value) {
             const column = Number(value);
-            if (column === 1 || column === 2 || column === 3) return column;
+            if (Number.isInteger(column) && column >= 1 && column <= COLUMN_COUNT) return column;
             return 1;
         }
 
@@ -1240,7 +1328,7 @@
         function renumberOrders() {
             const normalized = [];
 
-            for (let column = 1; column <= 3; column++) {
+            for (let column = 1; column <= COLUMN_COUNT; column++) {
                 const columnLinks = links
                     .filter(link => Number(link.column) === column)
                     .sort((a, b) => Number(a.order) - Number(b.order) || Number(a.id) - Number(b.id));
@@ -1284,11 +1372,11 @@
                 order: 0
             }));
 
-            columns = [
+            columns = normalizeColumns([
                 { id: 1, name: 'Web Apps' },
                 { id: 2, name: 'Local Files' },
                 { id: 3, name: 'File Server' }
-            ];
+            ]);
 
             renumberOrders();
             nextId = links.length + 1;
@@ -1334,9 +1422,11 @@
 
         function render() {
             renderColumnTitles();
+            renderColumnStates();
 
-            for (let column = 1; column <= 3; column++) {
+            for (let column = 1; column <= COLUMN_COUNT; column++) {
                 const body = document.getElementById('column' + column);
+                if (!body) continue;
                 body.innerHTML = '';
 
                 const columnLinks = links
@@ -1388,6 +1478,39 @@
                 const column = columns.find(col => col.id === columnId);
                 title.textContent = column ? column.name : 'Column ' + columnId;
             });
+        }
+
+        function renderColumnStates() {
+            for (let columnId = 1; columnId <= COLUMN_COUNT; columnId++) {
+                const column = columns.find(col => col.id === columnId);
+                const isCollapsed = column ? column.collapsed === true : false;
+                const columnEl = document.querySelector('.links-column[data-column="' + columnId + '"]');
+                const body = document.getElementById('column' + columnId);
+                const button = document.querySelector('[data-collapse-for="' + columnId + '"]');
+
+                if (columnEl) {
+                    columnEl.classList.toggle('collapsed', isCollapsed);
+                }
+
+                if (body) {
+                    body.hidden = isCollapsed;
+                }
+
+                if (button) {
+                    button.textContent = isCollapsed ? '▼' : '▲';
+                    button.setAttribute('aria-expanded', String(!isCollapsed));
+                    button.setAttribute('aria-label', 'Column ' + columnId + (isCollapsed ? 'を展開' : 'を折りたたむ'));
+                }
+            }
+        }
+
+        function toggleColumnCollapsed(columnId) {
+            const column = columns.find(col => col.id === columnId);
+            if (!column) return;
+
+            column.collapsed = !column.collapsed;
+            saveToStorage();
+            render();
         }
 
         function createLinkElement(link) {
